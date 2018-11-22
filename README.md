@@ -15,9 +15,9 @@ in .rgotpl/config.(yaml|json|toml) while the later takes precedence over the
 first. The config file location can be overwritten by specifying the 
 environment variable __RGTPL_CONFIG__ with the full path to the config file.
 All fields from the config file can be overridden by an environment variable 
-with an uppercase field name, with underscore delimiters 
-instead of camelCase and prefixed with __RGTPL__, e.g. 
-__RGTPL_LOGGING.LOG_LEVEL=debug__.
+with an uppercase field name, with underscore delimiters for nested values 
+and prefixed with __RGTPL___, e.g. 
+__RGTPL_LOGGING_LOGLEVEL=debug__.
 
 
 ### Example config
@@ -38,9 +38,7 @@ templates:
 The data can be provided as yaml, json or toml files which is parsed into a go
 data structure and then passed to the go templating engine. Also all environment
 variables are added to the data structure under the field __env__ and then the 
-variable name camelCased. Data from the input files under the key env is overriden.
-This could be used to provide defaults but the data structures are not merged but
-overridden as a whole.
+variable name camelCased. Data from the input files under the key env is overridden as a whole.
 
 #### Example
 the template file:
@@ -69,7 +67,8 @@ with the data file
   },
   "env": {
     "user": "defaultUser",
-    "" ""
+     "cert": "dummyCert",
+     "key": "dummyKey"
   }
 }
 
@@ -78,14 +77,13 @@ with the data file
 and environment variables set like this
 
 ```bash
-export DOCKER.REPO=somerepo
 export HOME=/home/templater
 export USER=hmuendel
 export PASSWORD=supersecret
 
 ```
 
-would be rendered like this, it the missingKey property would be invalid
+would be rendered like this, if the missingKey property would be set to _invalid_
 
 ```yaml
 platform: linux
