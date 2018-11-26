@@ -9,25 +9,24 @@ templagting syntax](https://golang.org/pkg/text/template/).
 
 ## Config
 
-The tool itself takes it's config from a file in 
-$HOME/.rgotpl/config.(yaml|json|toml) or relative to the executable 
-in .rgotpl/config.(yaml|json|toml) while the later takes precedence over the 
-first. The config file location can be overwritten by specifying the 
+The tool itself takes it's config from a file relative to the executable 
+in .rgotpl/config.(yaml|json|toml). The config file location can be overwritten by specifying the 
 environment variable __RGTPL_CONFIG__ with the full path to the config file.
 All fields from the config file can be overridden by an environment variable 
 with an uppercase field name, with underscore delimiters for nested values 
 and prefixed with __RGTPL___, e.g. 
-__RGTPL_LOGGING_LOGLEVEL=debug__.
+`RGTPL_LOG_LEVEL=7`.
 
 
 ### Example config
 
 ```yaml
-logging:
-    logLevel: debug # one of debug, error defaults to error
-    logFormat: text # one of json or text, defaults to json
-
-templates:
+log:
+    level: 3 # loglevel 0-10 with 10 most verbose, defaults to 0
+    logDir: /var/log/rgtpl/ # directory where to write log files if empty logging to stderr
+    vmodule: "*config*.go=10" # pattern to match modules files and set different log level 
+      
+template:
     missingKey: zero # one of zero, invalid, error, defaults to error as described [here](https://golang.org/pkg/text/template/#Template.Option) 
     sourcePath: /var/data/ci-templates #
     targetPath: /usr/local/ci/pipelines # if empty templates get rendered in place defaults to ""
@@ -35,7 +34,7 @@ templates:
 
 
 ## Example data and template
-The data can be provided as yaml, json or toml files which is parsed into a go
+The data can be provided as yaml, which is parsed into a go
 data structure and then passed to the go templating engine. Also all environment
 variables are added to the data structure under the field __env__ and then the 
 variable name camelCased. Data from the input files under the key env is overridden as a whole.
@@ -99,5 +98,31 @@ image_resource:
     cert: <no value>    
     key: <no value>
 ```
+## verbose logging
+
+Since I could not find a strict definition,
+I interpreted google's verbose logging (glog)[https://github.com/google/glog]
+in the following way.
+
+Verbosity increases with increased v level where an increase to an odd level shows
+a more detailed control flow of the program while an increase to an even level
+logs data structures in the detail of the previous log level.
+All higher v levels log everything the lower levels did.
+
+
+|v  |verbosity|
+|---|---------|
+|0  | unrecoverable situations, startup and finish
+|1  | errors and malformed conditions with maybe unwanted but recoverable situations
+|2  | showing erroneous and malformed data
+|3  | logging at general control points of the code,like entering and leaving modules
+|4  | showing important data at control points
+|5  | logging branching of control flow, like function calls
+|6  | showing important data from function calls and return values
+|7  | logging in function conditional branches and such
+|8  | showing data that lead to decisions in functions and results of transformations
+|9  | logging single events of everything, each request 
+|10 | showing all data of every 
+    
 
 
