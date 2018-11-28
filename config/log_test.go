@@ -16,6 +16,8 @@ var configTests = []struct {
 	{"only_level", `
 log:
   level: "42"
+  logDir: ""
+  vmodule: ""
 `,
 		&config.LogConfig{
 			Level: "42",
@@ -25,9 +27,14 @@ log:
   level: "a"
 `,
 		nil},
+	{"no_level", `
+log:
+  logDir: "ff"
+`,
+		nil},
 }
 
-func TestParseConfigs(t *testing.T) {
+func TestParseLogConfigs(t *testing.T) {
 	prefix := envPrefix()
 	err := cleanEnv(prefix)
 	if err != nil {

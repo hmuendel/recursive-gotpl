@@ -9,7 +9,7 @@ import (
 
 type LogConfig struct {
 	Level   string `validate:"required,numeric"`
-	LogDir  string `validate:""`
+	LogDir  string `validate:"file"`
 	Vmodule string `validate:""`
 }
 
@@ -66,7 +66,7 @@ func (lc *LogConfig) configure() error {
 	}
 	lc.Level = newConfig.Level
 	lc.LogDir = newConfig.LogDir
-	lc.Vmodule = newConfig.LogDir
+	lc.Vmodule = newConfig.Vmodule
 	return nil
 }
 
