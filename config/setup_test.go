@@ -11,6 +11,11 @@ import (
 )
 
 func TestFailOnNoConfig(t *testing.T) {
+	prefix := envPrefix()
+	err := cleanEnv(prefix)
+	if err != nil {
+		t.Fatalf("unable to clear environment: %v", err)
+	}
 	cfg := make(map[string]interface{})
 	tempFile, err := createConfigInTmp("")
 	if err != nil {
@@ -34,7 +39,7 @@ func TestFailOnNoConfig(t *testing.T) {
 
 	//running test function
 	_, err = CaptureStderrLines(1*time.Millisecond, func() {
-		config.Setup("0.1.0", "deadbeaf", cfg)
+		config.Setup("0.1.0", "deadbeaf", prefix, cfg)
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -45,6 +50,11 @@ func TestFailOnNoConfig(t *testing.T) {
 }
 
 func TestDontFail(t *testing.T) {
+	prefix := envPrefix()
+	err := cleanEnv(prefix)
+	if err != nil {
+		t.Fatalf("unable to clear environment: %v", err)
+	}
 	cfg := make(map[string]interface{})
 	tempFile, err := createConfigInTmp("foo: bar")
 	if err != nil {
@@ -53,7 +63,7 @@ func TestDontFail(t *testing.T) {
 	cfg["config"] = tempFile
 	//running test function
 	_, err = CaptureStderrLines(1*time.Millisecond, func() {
-		config.Setup("0.1.0", "deadbeaf", cfg)
+		config.Setup("0.1.0", "deadbeaf", prefix, cfg)
 	})
 
 	if err != nil {
@@ -65,19 +75,24 @@ func TestDontFail(t *testing.T) {
 }
 
 func TestEnvOverDefault(t *testing.T) {
+	prefix := envPrefix()
+	err := cleanEnv(prefix)
+	if err != nil {
+		t.Fatalf("unable to clear environment: %v", err)
+	}
 	cfg := make(map[string]interface{})
 	tempFile, err := createConfigInTmp("foo: bar")
 	if err != nil {
 		t.Fatalf("error creating test tempdir: %s", err)
 	}
 	cfg["config"] = path.Join(tempFile, "non-existent")
-	err = os.Setenv(config.EnvPrefix+"_CONFIG", tempFile)
+	err = os.Setenv(prefix+"_CONFIG", tempFile)
 	if err != nil {
 		t.Fatalf("error setting config path variable: %s", err)
 
 	}
 	_, err = CaptureStderrLines(1*time.Millisecond, func() {
-		config.Setup("0.1.0", "deadbeaf", cfg)
+		config.Setup("0.1.0", "deadbeaf", prefix, cfg)
 	})
 
 	if err != nil {
@@ -89,6 +104,11 @@ func TestEnvOverDefault(t *testing.T) {
 }
 
 func TestInitLogShowUp(t *testing.T) {
+	prefix := envPrefix()
+	err := cleanEnv(prefix)
+	if err != nil {
+		t.Fatalf("unable to clear environment: %v", err)
+	}
 	expectedLog := "starting recursive-gotpl"
 	cfg := make(map[string]interface{})
 	tempFile, err := createConfigInTmp("foo: bar")
@@ -97,7 +117,7 @@ func TestInitLogShowUp(t *testing.T) {
 	}
 	cfg["config"] = tempFile
 	output, err := CaptureStderrLines(1*time.Millisecond, func() {
-		config.Setup("0.1.0", "deadbeaf", cfg)
+		config.Setup("0.1.0", "deadbeaf", prefix, cfg)
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -114,15 +134,20 @@ func TestInitLogShowUp(t *testing.T) {
 }
 
 func TestPreConfigVerbosityLevel(t *testing.T) {
+	prefix := envPrefix()
+	err := cleanEnv(prefix)
+	if err != nil {
+		t.Fatalf("unable to clear environment: %v", err)
+	}
 	var levelTests = []struct {
 		level       string
 		outputLines int
 	}{
-		{"1000", 10},
-		{"10", 10},
-		{"9", 8},
-		{"8", 5},
-		{"7", 4},
+		{"1000", 12},
+		{"10", 12},
+		{"9", 10},
+		{"8", 7},
+		{"7", 6},
 		{"6", 3},
 		{"5", 3},
 		{"4", 2},
@@ -133,21 +158,22 @@ func TestPreConfigVerbosityLevel(t *testing.T) {
 		{"-1000", 2},
 		{"foo", 2},
 	}
-	cfg := make(map[string]interface{})
-	tempFile, err := createConfigInTmp("foo: bar")
-	if err != nil {
-		t.Fatalf("error creating test tempdir: %s", err)
-	}
-	cfg["config"] = tempFile
+
 	for _, testCase := range levelTests {
 		t.Run("v"+testCase.level, func(t *testing.T) {
-			err = os.Setenv(config.EnvPrefix+"_LOG_LEVEL", testCase.level)
+			cfg := make(map[string]interface{})
+			tempFile, err := createConfigInTmp("foo: bar")
+			if err != nil {
+				t.Fatalf("error creating test tempdir: %s", err)
+			}
+			cfg["config"] = tempFile
+			err = os.Setenv(prefix+"_LOG_LEVEL", testCase.level)
 			if err != nil {
 				t.Fatalf("error setting config path variable: %s", err)
 
 			}
 			output, err := CaptureStderrLines(1*time.Millisecond, func() {
-				config.Setup("0.1.0", "deadbeaf", cfg)
+				config.Setup("0.1.0", "deadbeaf", prefix, cfg)
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -165,15 +191,20 @@ func TestPreConfigVerbosityLevel(t *testing.T) {
 }
 
 func TestVariousVersionsAndCommitsToShow(t *testing.T) {
-	cfg := make(map[string]interface{})
-	tempFile, err := createConfigInTmp("foo: bar")
+	prefix := envPrefix()
+	err := cleanEnv(prefix)
 	if err != nil {
-		t.Fatalf("error creating test tempdir: %s", err)
+		t.Fatalf("unable to clear environment: %v", err)
 	}
-	cfg["config"] = tempFile
 	f := func(version, commit string) bool {
+		cfg := make(map[string]interface{})
+		tempFile, err := createConfigInTmp("foo: bar")
+		if err != nil {
+			t.Fatalf("error creating test tempdir: %s", err)
+		}
+		cfg["config"] = tempFile
 		output, err := CaptureStderrLines(1*time.Millisecond, func() {
-			config.Setup(version, commit, cfg)
+			config.Setup(version, commit, prefix, cfg)
 		})
 		if err != nil {
 			t.Fatal(err)

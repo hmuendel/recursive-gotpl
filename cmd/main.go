@@ -14,7 +14,7 @@ func main() {
 	//setting defaults for config values
 	defaults := make(map[string]interface{})
 	//first thing is to setup logging and read the config
-	config.Setup(VERSION, COMMIT, defaults)
+	config.Setup(VERSION, COMMIT, "RGTPL", defaults)
 
 	//all finished
 	glog.Info("recursive-gotpl finished successfully")

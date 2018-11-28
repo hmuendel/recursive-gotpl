@@ -4,16 +4,24 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 )
 
 var dirCleaner = make([]func(), 0)
 
+const testPrefixBase = "RGTPL_TEST"
+const testPrefixAddLength = 4
+
+var letterRunes = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
 //redirects stderr and run function f for a duration. returns all lines captured during this time
 func CaptureStderrLines(duration time.Duration, f func()) ([]string, error) {
+
 	lines := make([]string, 0)
 	oldStdErr := os.Stderr
 	readFile, writeFile, err := os.Pipe()
@@ -50,7 +58,6 @@ func CaptureStderrLines(duration time.Duration, f func()) ([]string, error) {
 func createConfigInTmp(content string) (string, error) {
 	tempDir, err := ioutil.TempDir("", "recursive-gotpl-test")
 	f := func() {
-		fmt.Println("deleting dir", tempDir)
 		err := os.RemoveAll(tempDir)
 		if err != nil {
 			fmt.Printf("Error removing tempdir: %s", tempDir)
@@ -70,13 +77,30 @@ func createConfigInTmp(content string) (string, error) {
 }
 
 func cleanup() {
-	fmt.Println("startiing cleanup")
+	fmt.Println("starting cleanup")
 	for _, f := range dirCleaner {
 		f()
 	}
 }
+func cleanEnv(prefix string) error {
+	for _, e := range os.Environ() {
+		if len(prefix) != testPrefixAddLength+len(testPrefixBase) && strings.HasPrefix(e, prefix) {
+			return os.Unsetenv(e)
+		}
+	}
+	return nil
+}
+
+func envPrefix() string {
+	b := make([]rune, testPrefixAddLength)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return testPrefixBase + string(b)
+}
 
 func TestMain(m *testing.M) {
+	rand.Seed(time.Now().UnixNano())
 	m.Run()
 	cleanup()
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	"gopkg.in/go-playground/validator.v9"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,14 +15,17 @@ import (
 
 //The prefix for which config environment variables are considered
 const (
-	EnvPrefix     = "RGTPL"
 	NoConfigPanic = "panicking cowardly without a config to read"
 )
+
+var validate *validator.Validate
+
+var configStore *viper.Viper
 
 // Setup should be the initial call in the application.
 // It configures logging before the config is read and reads the config at the default paths
 // or the path configured via environment variables. It logs version and commit hash
-func Setup(version, commit string, defaults map[string]interface{}) {
+func Setup(version, commit string, EnvPrefix string, defaults map[string]interface{}) {
 
 	//preparing glog flags because we don't configure it via commandline flags and we want to log something
 	//before going into the config reading logic which might fail
@@ -49,6 +53,14 @@ func Setup(version, commit string, defaults map[string]interface{}) {
 	}
 	flag.Parse()
 
+	if glog.V(7) {
+		glog.Info("instantiating viper")
+	}
+	configStore = viper.New()
+	if glog.V(7) {
+		glog.Info("instantiating validator")
+	}
+	validate = validator.New()
 	//preparing the config
 	if glog.V(7) {
 		glog.Info("setting defaults")
@@ -64,26 +76,26 @@ func Setup(version, commit string, defaults map[string]interface{}) {
 		}
 	}
 
-	viper.SetEnvPrefix(EnvPrefix)
-	err = viper.BindEnv("config", EnvPrefix+"_CONFIG")
+	configStore.SetEnvPrefix(EnvPrefix)
+	err = configStore.BindEnv("config", EnvPrefix+"_CONFIG")
 	if err != nil {
 		fmt.Print(fmt.Errorf("error binding viper conifg env: %s", err))
 	}
-	file := path.Base(viper.GetString("config"))
+	file := path.Base(configStore.GetString("config"))
 	name := strings.TrimSuffix(file, filepath.Ext(file))
-	dir := path.Dir(viper.GetString("config"))
+	dir := path.Dir(configStore.GetString("config"))
 	if glog.V(5) {
 		glog.Infof("reading config from %s/%s.<extension>", dir, name)
 	}
-	viper.SetConfigName(name)
-	viper.AddConfigPath(dir)
-	err = viper.ReadInConfig()
+	configStore.SetConfigName(name)
+	configStore.AddConfigPath(dir)
+	err = configStore.ReadInConfig()
 	if err != nil {
 		glog.Errorf("Fatal error config file: %s \n", err)
 		panic(NoConfigPanic)
 	}
-	viper.AutomaticEnv()
-	viper.WatchConfig()
+	configStore.AutomaticEnv()
+	configStore.WatchConfig()
 	if glog.V(9) {
 		glog.Info("successfully read config")
 	}
@@ -97,6 +109,6 @@ func setDefaults(defaults map[string]interface{}) {
 				glog.Info(v)
 			}
 		}
-		viper.SetDefault(k, v)
+		configStore.SetDefault(k, v)
 	}
 }
